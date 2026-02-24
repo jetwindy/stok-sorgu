@@ -4,7 +4,7 @@ import pandas as pd
 st.set_page_config(page_title="Stok Sistemi", layout="wide")
 
 # Google Sheets canlı bağlantı
-url = "https://docs.google.com/spreadsheets/d/189eP59G3ECgvXypR8UQ_BULqMSdZrLav/export?format=csv&gid=1105255650"
+url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTcig6zCkTWwTcTak9EWq9kTd8KQRgk2bWgWEmSkBbzXIFKNwojYCsj6d3jOU9Z8A/pub?gid=1377898139&single=true&output=csv"
 
 df = pd.read_csv(url)
 df.columns = df.columns.str.strip()
