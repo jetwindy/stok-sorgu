@@ -3,14 +3,8 @@ import pandas as pd
 
 st.set_page_config(page_title="Stok Sistemi", layout="wide")
 
-@st.cache_data(ttl=300)
-def load_data():
-    url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTcig6zCkTWwTcTak9EWq9kTd8KQRgk2bWgWEmSkBbzXIFKNwojYCsj6d3jOU9Z8A/pub?gid=1377898139&single=true&output=csv"
-    df = pd.read_csv(url)
-    df.columns = df.columns.str.strip()
-    return df
-
-df = load_data()
+df = pd.read_excel("STOK.xlsx", sheet_name="STOK")
+df.columns = df.columns.str.strip()
 
 st.title("📦 Stok Sorgulama")
 
@@ -21,7 +15,6 @@ secili_cins = st.selectbox("CİNS Seç", sorted(filtered_cins))
 sonuc = df[(df["TEL"] == secili_tel) & (df["CİNS"] == secili_cins)]
 
 if not sonuc.empty:
-    st.success("Sonuç bulundu ✅")
     st.dataframe(
         sonuc[[
             "RAF NO",
