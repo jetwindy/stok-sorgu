@@ -1,4 +1,30 @@
 import streamlit as st
+import streamlit as st
+
+if "giris" not in st.session_state:
+    st.session_state.giris = False
+    st.session_state.kullanici = ""
+
+if not st.session_state.giris:
+
+    st.title("Stok Sistemi Giriş")
+
+    kullanici = st.text_input("Kullanıcı Adı")
+    sifre = st.text_input("Şifre", type="password")
+
+    if st.button("Giriş Yap"):
+
+        if kullanici in st.secrets["users"]:
+            if st.secrets["users"][kullanici] == sifre:
+                st.session_state.giris = True
+                st.session_state.kullanici = kullanici
+                st.rerun()
+            else:
+                st.error("Şifre yanlış")
+        else:
+            st.error("Kullanıcı bulunamadı")
+
+    st.stop()
 import pandas as pd
 
 st.set_page_config(page_title="Stok Sistemi", layout="wide")
