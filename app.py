@@ -3,6 +3,9 @@ import pandas as pd
 import datetime
 import time
 
+# ==============================
+# 🔐 SESSION AYARLARI
+# ==============================
 
 if "giris" not in st.session_state:
     st.session_state.giris = False
@@ -10,13 +13,16 @@ if "giris" not in st.session_state:
     st.session_state.rol = ""
     st.session_state.son_aktif = time.time()
 
-
+# 30 dakika otomatik çıkış
 if st.session_state.giris:
     if time.time() - st.session_state.son_aktif > 1800:
         st.session_state.giris = False
         st.warning("Oturum süresi doldu. Tekrar giriş yapın.")
         st.stop()
 
+# ==============================
+# 🔐 LOGIN EKRANI
+# ==============================
 
 if not st.session_state.giris:
 
@@ -34,7 +40,7 @@ if not st.session_state.giris:
                 st.session_state.rol = st.secrets["roles"][kullanici]
                 st.session_state.son_aktif = time.time()
 
-                # LOG KAYDI
+                # Log kaydı
                 with open("log.txt", "a") as f:
                     f.write(f"{datetime.datetime.now()} - {kullanici} giriş yaptı\n")
 
@@ -43,6 +49,23 @@ if not st.session_state.giris:
                 st.error("Şifre yanlış")
         else:
             st.error("Kullanıcı bulunamadı")
+
+    st.stop()
+
+# Her işlemde süre yenile
+st.session_state.son_aktif = time.time()
+
+# Sidebar bilgi
+st.sidebar.success(f"Kullanıcı: {st.session_state.kullanici}")
+st.sidebar.info(f"Rol: {st.session_state.rol}")
+
+if st.sidebar.button("Çıkış Yap"):
+    st.session_state.giris = False
+    st.rerun()
+
+# ==============================
+# 👑 ADMIN PANEL
+# ==============================
 
 if st.session_state.rol == "admin":
     st.sidebar.markdown("---")
@@ -55,19 +78,6 @@ if st.session_state.rol == "admin":
         except:
             st.warning("Henüz log yok.")
 
-
-    st.stop()
-
-
-st.session_state.son_aktif = time.time()
-
-
-st.sidebar.success(f"Kullanıcı: {st.session_state.kullanici}")
-st.sidebar.info(f"Rol: {st.session_state.rol}")
-
-if st.sidebar.button("Çıkış Yap"):
-    st.session_state.giris = False
-    st.rerun()
 
 st.set_page_config(page_title="Stok Sistemi", layout="wide")
 
