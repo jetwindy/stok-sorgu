@@ -3,11 +3,14 @@ import pandas as pd
 
 st.set_page_config(page_title="Stok Sistemi", layout="wide")
 
-# Google Sheets canlı bağlantı
-url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTcig6zCkTWwTcTak9EWq9kTd8KQRgk2bWgWEmSkBbzXIFKNwojYCsj6d3jOU9Z8A/pub?gid=1377898139&single=true&output=csv"
+@st.cache_data(ttl=300)
+def load_data():
+    url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTcig6zCkTWwTcTak9EWq9kTd8KQRgk2bWgWEmSkBbzXIFKNwojYCsj6d3jOU9Z8A/pub?gid=1377898139&single=true&output=csv"
+    df = pd.read_csv(url)
+    df.columns = df.columns.str.strip()
+    return df
 
-df = pd.read_csv(url)
-df.columns = df.columns.str.strip()
+df = load_data()
 
 st.title("📦 Stok Sorgulama")
 
