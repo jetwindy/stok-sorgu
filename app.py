@@ -44,6 +44,18 @@ if not st.session_state.giris:
         else:
             st.error("Kullanıcı bulunamadı")
 
+if st.session_state.rol == "admin":
+    st.sidebar.markdown("---")
+    st.sidebar.title("Admin Paneli")
+
+    if st.sidebar.button("Logları Gör"):
+        try:
+            with open("log.txt", "r") as f:
+                st.text(f.read())
+        except:
+            st.warning("Henüz log yok.")
+
+
     st.stop()
 
 
