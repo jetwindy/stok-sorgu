@@ -6,18 +6,9 @@ st.set_page_config(page_title="Stok Sistemi", layout="wide")
 df = pd.read_excel("STOK.xlsx", sheet_name="STOK")
 df.columns = df.columns.str.strip()
 
-df["TEL"] = df["TEL"].astype(str).str.strip()
-df["CİNS"] = df["CİNS"].astype(str).str.strip()
-
-df = df.dropna(subset=["TEL", "CİNS"])
-df.columns = df.columns.str.strip()
-
 st.title("📦 Stok Sorgulama")
 
-secili_tel = st.radio(
-"TEL Seç", sorted(df["TEL"].unique())),
-horizontal=True
-)
+secili_tel = st.radio("TEL Seç", sorted(df["TEL"].unique()))
 filtered_cins = df[df["TEL"] == secili_tel]["CİNS"].unique()
 secili_cins = st.radio("CİNS Seç", sorted(filtered_cins))
 
