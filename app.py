@@ -1,13 +1,26 @@
 import streamlit as st
-import streamlit as st
+import pandas as pd
+import datetime
+import time
+
 
 if "giris" not in st.session_state:
     st.session_state.giris = False
     st.session_state.kullanici = ""
+    st.session_state.rol = ""
+    st.session_state.son_aktif = time.time()
+
+
+if st.session_state.giris:
+    if time.time() - st.session_state.son_aktif > 1800:
+        st.session_state.giris = False
+        st.warning("Oturum süresi doldu. Tekrar giriş yapın.")
+        st.stop()
+
 
 if not st.session_state.giris:
 
-    st.title("Stok Sistemi Giriş")
+    st.title("🔐 Stok Sistemi Giriş")
 
     kullanici = st.text_input("Kullanıcı Adı")
     sifre = st.text_input("Şifre", type="password")
@@ -18,6 +31,13 @@ if not st.session_state.giris:
             if st.secrets["users"][kullanici] == sifre:
                 st.session_state.giris = True
                 st.session_state.kullanici = kullanici
+                st.session_state.rol = st.secrets["roles"][kullanici]
+                st.session_state.son_aktif = time.time()
+
+                # LOG KAYDI
+                with open("log.txt", "a") as f:
+                    f.write(f"{datetime.datetime.now()} - {kullanici} giriş yaptı\n")
+
                 st.rerun()
             else:
                 st.error("Şifre yanlış")
@@ -25,7 +45,17 @@ if not st.session_state.giris:
             st.error("Kullanıcı bulunamadı")
 
     st.stop()
-import pandas as pd
+
+
+st.session_state.son_aktif = time.time()
+
+
+st.sidebar.success(f"Kullanıcı: {st.session_state.kullanici}")
+st.sidebar.info(f"Rol: {st.session_state.rol}")
+
+if st.sidebar.button("Çıkış Yap"):
+    st.session_state.giris = False
+    st.rerun()
 
 st.set_page_config(page_title="Stok Sistemi", layout="wide")
 
