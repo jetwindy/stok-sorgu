@@ -90,7 +90,7 @@ def log_kaydet(islem, detay):
 # =========================
 menu = st.sidebar.radio(
     "📌 Menü",
-    ["📊 Dashboard", "📦 Stok Sorgula", "📁 Log Kayıtları"] +
+    ["📦 Stok Sorgula", "📊 Dashboard", "📁 Log Kayıtları"] +
     (["🛠 Admin Panel"] if st.session_state.role == "admin" else [])
 )
 
