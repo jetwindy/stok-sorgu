@@ -17,8 +17,10 @@ st.set_page_config(page_title="Stok Yönetim", page_icon="📦", layout="centere
 # =========================
 USERS = {
     "admin": {"password": "1234", "role": "admin"},
-    "ufuk": {"password": "1111", "role": "user"},
-    "ofis1": {"password": "2222", "role": "user"},
+    "ufuk": {"password": "1998", "role": "user"},
+    "burak": {"password": "2000", "role": "user"},
+    "ali": {"password": "2005", "role": "user"},
+    "recep": {"password": "1976", "role": "user"},
 }
 
 if "authenticated" not in st.session_state:
