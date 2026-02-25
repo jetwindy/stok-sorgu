@@ -1,49 +1,60 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import pagesizes
+import os
 
 # =========================
-# SAYFA AYARI (MOBİL UYUMLU)
+# SAYFA AYARI
 # =========================
-st.set_page_config(
-    page_title="Stok Takip",
-    page_icon="📦",
-    layout="centered"
-)
+st.set_page_config(page_title="Stok Yönetim", page_icon="📦", layout="centered")
 
 # =========================
-# ŞİFRE
+# KULLANICILAR
 # =========================
-PASSWORD = "1234"  # Burayı değiştirebilirsin
+USERS = {
+    "admin": {"password": "1234", "role": "admin"},
+    "ufuk": {"password": "1111", "role": "user"},
+    "ofis1": {"password": "2222", "role": "user"},
+}
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
+    st.session_state.user = None
+    st.session_state.role = None
 
+# =========================
+# LOGIN
+# =========================
 if not st.session_state.authenticated:
-    st.title("🔐 Giriş")
+    st.title("🔐 Kullanıcı Girişi")
 
-    password_input = st.text_input("Şifre", type="password")
+    username = st.text_input("Kullanıcı Adı")
+    password = st.text_input("Şifre", type="password")
 
     if st.button("Giriş Yap"):
-        if password_input == PASSWORD:
+        if username in USERS and USERS[username]["password"] == password:
             st.session_state.authenticated = True
+            st.session_state.user = username
+            st.session_state.role = USERS[username]["role"]
             st.rerun()
         else:
-            st.error("Hatalı şifre")
+            st.error("Hatalı giriş")
 
     st.stop()
 
 # =========================
-# EXCEL VERİSİ (GITHUB RAW)
+# VERİ YÜKLE
 # =========================
 @st.cache_data(ttl=300)
 def load_data():
     url = "https://github.com/jetwindy/stok-sorgu/raw/main/STOK.xlsx"
     df = pd.read_excel(url, sheet_name="STOK")
-
-    # Kolon isimlerini temizle
     df.columns = df.columns.str.strip()
 
-    # Sayısal kolonları düzelt
     numeric_cols = ["ELSAN", "HES", "ERİKOĞLU", "EMSAN", "KAVİ", "EMTEL", "TOPLAM"]
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
@@ -53,12 +64,38 @@ def load_data():
 df = load_data()
 
 # =========================
-# SIDEBAR MENÜ (MOBİL İÇİN)
+# LOG DOSYASI
+# =========================
+LOG_FILE = "log.csv"
+
+def log_kaydet(islem, detay):
+    log_df = pd.DataFrame([{
+        "Tarih": datetime.now(),
+        "Kullanıcı": st.session_state.user,
+        "İşlem": islem,
+        "Detay": detay
+    }])
+
+    if os.path.exists(LOG_FILE):
+        eski = pd.read_csv(LOG_FILE)
+        yeni = pd.concat([eski, log_df], ignore_index=True)
+        yeni.to_csv(LOG_FILE, index=False)
+    else:
+        log_df.to_csv(LOG_FILE, index=False)
+
+# =========================
+# SIDEBAR
 # =========================
 menu = st.sidebar.radio(
     "📌 Menü",
-    ["📊 Dashboard", "📦 Stok Sorgula"]
+    ["📊 Dashboard", "📦 Stok Sorgula", "📁 Log Kayıtları"] +
+    (["🛠 Admin Panel"] if st.session_state.role == "admin" else [])
 )
+
+st.sidebar.write(f"👤 {st.session_state.user}")
+if st.sidebar.button("Çıkış Yap"):
+    st.session_state.authenticated = False
+    st.rerun()
 
 # =========================
 # DASHBOARD
@@ -67,11 +104,9 @@ if menu == "📊 Dashboard":
 
     st.title("📊 Genel Dashboard")
 
-    toplam_stok = int(df["TOPLAM"].sum())
-    st.metric("Genel Toplam Stok", toplam_stok)
+    st.metric("Genel Toplam Stok", int(df["TOPLAM"].sum()))
 
     st.divider()
-
     st.subheader("🏷 Marka Dağılımı")
 
     marka_toplam = {
@@ -83,53 +118,98 @@ if menu == "📊 Dashboard":
         "EMTEL": df["EMTEL"].sum(),
     }
 
-    marka_df = pd.DataFrame(
+    chart_df = pd.DataFrame(
         list(marka_toplam.items()),
         columns=["Marka", "Toplam"]
     )
 
-    st.bar_chart(marka_df.set_index("Marka"), use_container_width=True)
+    st.pyplot(
+        chart_df.set_index("Marka").plot.pie(
+            y="Toplam",
+            autopct='%1.1f%%',
+            figsize=(5,5)
+        ).figure
+    )
 
 # =========================
-# STOK SORGULAMA
+# STOK SORGULA
 # =========================
 elif menu == "📦 Stok Sorgula":
 
     st.title("📦 Stok Sorgulama")
 
-    # TEL seçimi
-    secili_tel = st.selectbox(
-        "TEL Seç",
-        sorted(df["TEL"].astype(str).unique())
+    tel = st.selectbox("TEL", sorted(df["TEL"].astype(str).unique()))
+    cins = st.selectbox(
+        "CİNS",
+        sorted(df[df["TEL"].astype(str) == tel]["CİNS"].unique())
     )
 
-    # CİNS seçimi
-    secili_cins = st.selectbox(
-        "CİNS Seç",
-        sorted(df[df["TEL"].astype(str) == secili_tel]["CİNS"].unique())
-    )
-
-    # Filtreleme
     sonuc = df[
-        (df["TEL"].astype(str) == secili_tel) &
-        (df["CİNS"] == secili_cins)
+        (df["TEL"].astype(str) == tel) &
+        (df["CİNS"] == cins)
     ]
 
     if not sonuc.empty:
 
-        st.divider()
-        st.subheader("📋 Sonuç")
-
         satir = sonuc.iloc[0]
 
-        st.write(f"**RAF NO:** {satir['RAF NO']}")
-        st.write(f"**ELSAN:** {int(satir['ELSAN'])}")
-        st.write(f"**HES:** {int(satir['HES'])}")
-        st.write(f"**ERİKOĞLU:** {int(satir['ERİKOĞLU'])}")
-        st.write(f"**EMSAN:** {int(satir['EMSAN'])}")
-        st.write(f"**KAVİ:** {int(satir['KAVİ'])}")
-        st.write(f"**EMTEL:** {int(satir['EMTEL'])}")
-        st.write(f"**TOPLAM:** {int(satir['TOPLAM'])}")
+        st.markdown("### 📋 Sonuç Kartı")
+        st.dataframe(sonuc, use_container_width=True)
+
+        log_kaydet("Sorgulama", f"{tel} - {cins}")
+
+        # PDF Export
+        if st.button("📄 PDF İndir"):
+
+            file_path = "stok_rapor.pdf"
+            doc = SimpleDocTemplate(file_path, pagesize=pagesizes.A4)
+            elements = []
+
+            styles = getSampleStyleSheet()
+            elements.append(Paragraph("Stok Raporu", styles["Heading1"]))
+            elements.append(Spacer(1, 12))
+
+            data = [list(sonuc.columns)] + sonuc.values.tolist()
+            table = Table(data)
+            table.setStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.grey),
+                ('GRID', (0,0), (-1,-1), 1, colors.black)
+            ])
+
+            elements.append(table)
+            doc.build(elements)
+
+            with open(file_path, "rb") as f:
+                st.download_button(
+                    "PDF Dosyasını İndir",
+                    f,
+                    file_name="stok_rapor.pdf"
+                )
 
     else:
-        st.warning("Kayıt bulunamadı.")
+        st.warning("Kayıt bulunamadı")
+
+# =========================
+# LOG
+# =========================
+elif menu == "📁 Log Kayıtları":
+
+    st.title("📁 Günlük İşlem Kayıtları")
+
+    if os.path.exists(LOG_FILE):
+        log_df = pd.read_csv(LOG_FILE)
+        st.dataframe(log_df, use_container_width=True)
+    else:
+        st.info("Henüz kayıt yok")
+
+# =========================
+# ADMIN PANEL
+# =========================
+elif menu == "🛠 Admin Panel":
+
+    st.title("🛠 Admin Panel")
+
+    st.write("Toplam Kullanıcı:", len(USERS))
+
+    st.write("### Kullanıcılar")
+    st.json(USERS)
